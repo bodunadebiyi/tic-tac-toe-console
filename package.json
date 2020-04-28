@@ -1,0 +1,12 @@
+{
+  "name": "tic-tac-toe",
+  "version": "1.0.0",
+  "description": "Simple tic tac toe game",
+  "main": "index.js",
+  "author": "Bodunde Adebiyi <bodunadebiyi@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.0.0",
+    "readline-sync": "^1.4.10"
+  }
+}

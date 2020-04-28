@@ -1,9 +1,13 @@
+const chalk = require('chalk');
 const myArgs = process.argv.slice(2);
 const delay = getArgs('delay', 2000);
 const gridSize = getArgs('gridSize', 3);
+const humanGamePlay = getArgs('humanGamePlay', false, true);
 const player1 = getArgs('player1', 'X');
-const player2 = getArgs('player2', '0');
+const player2 = getArgs('player2', 'O');
+const readlineSync = require('readline-sync');
 
+let firstTimeRunning = true;
 let { gridMatrix, gridMatrixIndexes: possiblePositions } = initializeGrid(gridSize);
 const winPatterns = generateWinPattern(gridSize)
 
@@ -59,9 +63,11 @@ function generateWinPattern(gSize) {
     ]
 }
 
-function getArgs(argName, defaultValue) {
-    const foundArg = ((myArgs.find(e => e.includes(`--${argName}`)) || '')
-        .match(/--.*=(.)/) || [])[1];
+function getArgs(argName, defaultValue, isBoolValue=false) {
+    const argFieldName = myArgs.find(e => e.includes(`--${argName}`)) || '';
+    if (isBoolValue) return !!argFieldName;
+
+    const foundArg = (argFieldName.match(/--.*=(.)/) || [])[1];
 
     if (!foundArg) return defaultValue;
 
@@ -81,11 +87,24 @@ function getCurrentPlayerPattern(matrix, player) {
     return playerPattern;
 }
 
+function colorize(element) {
+    return element === player1 ? chalk.red.bold(element) : chalk.green.bold(element);
+}
+
+function danger(element) {
+    return chalk.bold.red(element);
+}
+
+function grey(element) {
+    return chalk.gray(element);
+}
+
 function renderGrid() {
     let grid = '';
 
     gridMatrix.forEach((element, index) => {
-        grid += `| ${element || " "} `;
+        grid += '|';
+        grid += element ? `  ${colorize(element)}  ` : (index > 9 ? ` ${grey(index)}  ` : `  ${grey(index)}  `)
 
         if ((index + 1) % gridSize === 0) {
             grid += '|\n';
@@ -123,13 +142,43 @@ function checkIfGameIsOver() {
 }
 
 function pickRandomChoiceAndUpdateGridMatrix() {
-    const randomPosition = possiblePositions[pickRandomPosition(possiblePositions)]
-    possiblePositions = possiblePositions.filter((e) => e !== randomPosition);
-    gridMatrix[randomPosition] = currentPlayer === player1 ? player1 : player2;
+    const randomChoice = possiblePositions[pickRandomPosition(possiblePositions)]
+    processSelectedChoice(randomChoice);
 }
+
+function processSelectedChoice(selectedChoice) {   
+    possiblePositions = possiblePositions.filter((e) => e !== selectedChoice);
+    gridMatrix[selectedChoice] = currentPlayer === player1 ? player1 : player2;
+}
+
+function userInputIsValid(userInput) {
+    if (Number.isNaN(Number(userInput)) || 
+        !possiblePositions.includes(userInput)
+    ) {
+        console.log(danger('Invalid input, your possible options are: \n'), possiblePositions.join(', '));
+        return false;
+    }
+
+    return true;
+}
+
 
 function updateCurrentPlayer() {
     currentPlayer = currentPlayer === player1 ? player2 : player1;
+}
+
+function acceptAndProcessUserInput() {
+    const userInput = +readlineSync.question(`Player ${colorize(currentPlayer)} choose from the available options:: `)
+    
+    if (userInputIsValid(userInput)) {
+        processSelectedChoice(userInput);
+    } else {
+        acceptAndProcessUserInput()
+    }
+}
+
+function displayWhoIsCurrentlyPlaying() {
+    console.log(`Player ${colorize(currentPlayer)} is playing...`);
 }
 
 function runGame() {
@@ -137,15 +186,26 @@ function runGame() {
         return;
     }
 
-    console.log(`player ${currentPlayer} is playing...`);
+    if (firstTimeRunning) {
+        firstTimeRunning = false;
+        renderGrid();
+    } else {
+        displayWhoIsCurrentlyPlaying();
 
-    pickRandomChoiceAndUpdateGridMatrix();
-    renderGrid();
-    checkForWinner();
-    checkIfGameIsOver();
-    updateCurrentPlayer();
+        if (humanGamePlay) {
+            acceptAndProcessUserInput();
+        } else {
+            pickRandomChoiceAndUpdateGridMatrix();
+        }
 
-    setTimeout(runGame, delay);
+        renderGrid();
+        checkForWinner();
+        checkIfGameIsOver();
+        updateCurrentPlayer();
+    }
+
+
+    setTimeout(runGame, humanGamePlay ? 0 : delay);
 }
 
 
