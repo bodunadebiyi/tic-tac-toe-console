@@ -125,7 +125,7 @@ function checkForWinner() {
     winPatterns.forEach(winPattern => {
         if (checkIfWinPatternMatches(winPattern, currentPlayerPattern)) {
             gameOver = true;
-            console.log('GAME OVER, winner is ' + currentPlayer);
+            console.log('GAME OVER, winner is ' + colorize(currentPlayer));
         }
     })
 }
