@@ -59,14 +59,14 @@ function generateWinPattern(gSize) {
 
 function initializeGrid(size) {
     const gridMatrix = [];
-    const gridMatrixIndexes = []
+    const possiblePositions = []
 
     for (let i=0; i < (size ** 2); i++) {
         gridMatrix.push('');
-        gridMatrixIndexes.push(i);
+        possiblePositions.push(i);
     }
 
-    return { gridMatrix, gridMatrixIndexes }
+    return { gridMatrix, possiblePositions }
 }
 
 function getArgs(argName, defaultValue, isBoolValue=false) {
@@ -84,6 +84,19 @@ function checkIfWinPatternMatches(winPattern, playerPattern) {
     return winPattern.every(e => playerPattern.includes(e))
 }
 
+function getCurrentPlayerPattern(matrix, player) {
+    const playerPattern = [];
+    matrix.forEach((e, i) => {
+        if (e === player) playerPattern.push(i);
+    })
+
+    return playerPattern;
+}
+
+function pickRandomPosition(positions) {
+    return Math.floor(Math.random() * positions.length);
+}
+
 module.exports = {
     userInputIsValid,
     danger,
@@ -92,4 +105,6 @@ module.exports = {
     initializeGrid,
     getArgs,
     checkIfWinPatternMatches,
+    getCurrentPlayerPattern,
+    pickRandomPosition,
 }
