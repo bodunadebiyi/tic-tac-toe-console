@@ -28,7 +28,7 @@ const gameOptions = {
     HOST: getArgs('host', false),
 }
 
-const gameState = {
+let gameState = {
     firstTimeRunning: true,
     winPatterns: generateWinPattern(gameOptions.GRID_SIZE),
     currentPlayer: player1,
@@ -125,6 +125,7 @@ function displayWhoIsCurrentlyPlaying() {
 }
 
 function processPlayerGamePlay() {
+    const { gameOver } = gameState;
     renderGrid();
     checkForWinner();
     checkIfGameIsOver();
@@ -159,12 +160,9 @@ function createGameServer() {
     let serverSocket = null;
 
     const server = net.createServer(function(socket) {
-        const { gridMatrix, possiblePositions, winPatterns, gridSize } = gameState;
+        const { GRID_SIZE } = gameOptions;
         serverSocket = socket;
-        socket.write(JSON.stringify({
-            gridMatrix, possiblePositions, winPatterns,
-            gridSize
-        }));
+        socket.write(JSON.stringify({ ...gameState, gridSize: GRID_SIZE }));
         socket.on('data', function(data) {
             processSelectedChoice(+data);
             processPlayerGamePlay(server);
@@ -189,8 +187,9 @@ function createGameServer() {
 
 function createGameClient() {
     const client = new net.Socket();
+    const { PORT, HOST } = gameOptions;
 
-    client.connect(+port, host, function() {
+    client.connect(+PORT, HOST, function() {
         console.log('You are connected with player1');
         displayWhoIsCurrentlyPlaying();
     })
@@ -198,6 +197,8 @@ function createGameClient() {
     client.on('data', function(data) {
         if (!gameState.hasRecievedGameState) {
             const state = JSON.parse(data);
+            gameOptions.GRID_SIZE = state.gridSize;
+            delete state.gridSize;
             gameState = {
                 ...state,
                 hasRecievedGameState: true,
