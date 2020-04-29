@@ -1,5 +1,12 @@
 const chalk = require('chalk');
-const myArgs = process.argv.slice(2);
+const {
+    userInputIsValid,
+    grey,
+    generateWinPattern,
+    initializeGrid,
+    getArgs,
+    checkIfWinPatternMatches 
+} = require('./helpers');
 const delay = getArgs('delay', 2000);
 let gridSize = getArgs('gridSize', 3);
 const humanGamePlay = getArgs('humanGamePlay', false, true);
@@ -20,70 +27,6 @@ let gameOver = false;
 let hasRecievedGameState = false;
 
 
-function initializeGrid(size) {
-    const gridMatrix = [];
-    const gridMatrixIndexes = []
-
-    for (let i=0; i < (size ** 2); i++) {
-        gridMatrix.push('');
-        gridMatrixIndexes.push(i);
-    }
-
-    return { gridMatrix, gridMatrixIndexes }
-}
-
-function generateWinPattern(gSize) {
-    const horizontalPatterns = [];
-    const verticalPatterns = [];
-    const diagonalPatterns = [];
-
-    for (let i=0; i < gSize; i++) {
-        let hPattern = [];
-        let vPattern = [];
-        let dPattern = [];
-        let gridLevel = i * gSize;
-
-        for (let y=0; y < gSize; y++) {
-            hPattern.push(y + gridLevel);
-            vPattern.push(i + (y * gSize))
-
-            if (i === 0) {
-                dPattern.push((y * gSize) + y)
-            }
-
-            if (i === gSize - 1) {
-                dPattern.push((gSize - 1) * (y + 1))
-            }
-        }
-
-        horizontalPatterns.push(hPattern);
-        verticalPatterns.push(vPattern);
-
-        if (dPattern.length) diagonalPatterns.push(dPattern);
-    }
-
-    return [
-        ...horizontalPatterns,
-        ...verticalPatterns,
-        ...diagonalPatterns
-    ]
-}
-
-function getArgs(argName, defaultValue, isBoolValue=false) {
-    const argFieldName = myArgs.find(e => e.includes(`--${argName}`)) || '';
-    if (isBoolValue) return !!argFieldName;
-
-    const foundArg = (argFieldName.match(/--.*=(.*)/) || [])[1];
-
-    if (!foundArg) return defaultValue;
-
-    return Number.isNaN(Number(foundArg)) ? foundArg : +foundArg;
-}
-
-function checkIfWinPatternMatches(winPattern, playerPattern) {
-    return winPattern.every(e => playerPattern.includes(e))
-}
-
 function getCurrentPlayerPattern(matrix, player) {
     const playerPattern = [];
     matrix.forEach((e, i) => {
@@ -97,12 +40,8 @@ function colorize(element) {
     return element === player1 ? chalk.red.bold(element) : chalk.green.bold(element);
 }
 
-function danger(element) {
-    return chalk.bold.red(element);
-}
-
-function grey(element) {
-    return chalk.gray(element);
+function printGameOverMessage(winner) {
+    console.log('GAME OVER, winner is ' + colorize(winner));
 }
 
 function renderGrid() {
@@ -122,10 +61,6 @@ function renderGrid() {
 
 function pickRandomPosition(positions) {
     return Math.floor(Math.random() * positions.length);
-}
-
-function printGameOverMessage(winner) {
-    console.log('GAME OVER, winner is ' + colorize(winner));
 }
 
 function checkForWinner() {
@@ -161,17 +96,6 @@ function processSelectedChoice(selectedChoice) {
     gridMatrix[selectedChoice] = currentPlayer === player1 ? player1 : player2;
 }
 
-function userInputIsValid(userInput) {
-    if (Number.isNaN(Number(userInput)) || 
-        !possiblePositions.includes(userInput)
-    ) {
-        console.log(danger('Invalid input, your possible options are: \n'), possiblePositions.join(', '));
-        return false;
-    }
-
-    return true;
-}
-
 function updateCurrentPlayer() {
     currentPlayer = currentPlayer === player1 ? player2 : player1;
 }
@@ -179,7 +103,7 @@ function updateCurrentPlayer() {
 function acceptAndProcessUserInput() {
     const userInput = +readlineSync.question(`Player ${colorize(currentPlayer)} choose from the available options:: `)
     
-    if (userInputIsValid(userInput)) {
+    if (userInputIsValid(userInput, possiblePositions)) {
         processSelectedChoice(userInput);
         return userInput;
     } else {
